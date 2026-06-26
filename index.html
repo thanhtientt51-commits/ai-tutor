@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI辅学 · 智能问答</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--sub:#86868b;--accent:#5865f2;--accent2:#8b5cf6;--border:rgba(0,0,0,.06);--radius:16px;--green:#16a34a;--red:#dc2626}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#fff;color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.5;height:100vh;display:flex;flex-direction:column}
+.nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;flex-shrink:0}
+.nav-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:50px}
+.nav-badge{font-size:.68em;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid var(--border);color:var(--sub)}
+
+.chat-card{flex:1;overflow:hidden;max-width:800px;margin:20px auto 0;width:100%;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 4px 18px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.chat-wrap{flex:1;overflow-y:auto;padding:20px 24px 12px}
+.chat-wrap::-webkit-scrollbar{width:4px}.chat-wrap::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:2px}
+
+.msg{display:flex;gap:12px;margin-bottom:22px;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.ai{align-items:flex-start}.msg.user{flex-direction:row-reverse}
+.msg .avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg.ai .avatar{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.msg.ai .avatar svg{width:20px;height:20px}
+.msg.user .avatar{background:#f0f0f3;color:var(--text)}
+.msg.user .avatar svg{width:20px;height:20px}
+.msg .bubble{max-width:72%;padding:14px 18px;border-radius:18px;font-size:.88em;line-height:1.8;word-break:break-word}
+.msg.ai .bubble{background:#f5f5f7;color:var(--text);border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.msg.user .bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:4px;box-shadow:0 2px 8px rgba(88,101,242,.15)}
+
+.suggest-row{display:flex;flex-wrap:wrap;gap:8px;padding:0 24px 16px;flex-shrink:0}
+.suggest-btn{padding:8px 16px;border-radius:18px;font-size:.76em;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--accent);transition:all .2s;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.suggest-btn:hover{border-color:var(--accent);background:#f0f4ff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(88,101,242,.1)}
+
+.input-bar{flex-shrink:0;padding:14px 24px;border-top:1px solid var(--border);background:#fafafa}
+.input-inner{display:flex;gap:10px;align-items:flex-end}
+.clear-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.clear-btn:hover{border-color:var(--red);color:var(--red);background:#fef2f2}
+.input-inner textarea{flex:1;padding:12px 16px;border:2px solid var(--border);border-radius:16px;font-size:.88em;line-height:1.6;font-family:inherit;resize:none;outline:none;max-height:120px;min-height:44px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.input-inner textarea:focus{border-color:var(--accent);box-shadow:0 4px 14px rgba(88,101,242,.1)}
+.input-inner button{width:44px;height:44px;border-radius:14px;border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;box-shadow:0 4px 14px rgba(88,101,242,.2)}
+.input-inner button:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(88,101,242,.3)}
+.input-inner button:disabled{opacity:.4;transform:none}
+
+.typing{display:flex;gap:4px;padding:6px 0}
+.typing span{width:6px;height:6px;border-radius:50%;background:#b0b0b8;animation:typing 1.4s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+.footer{text-align:center;padding:12px;color:#b0b0b8;font-size:.65em;flex-shrink:0}
+.input-inner textarea{font-size:.82em}.suggest-btn{font-size:.7em;padding:6px 12px}
+@media(max-width:600px){
+  .nav{padding:0 12px}.nav-inner{height:44px;font-size:.82em}.nav-badge{font-size:.6em;padding:4px 8px}
+  .home-btn{top:6px;left:6px;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);z-index:300}
+  .home-btn:hover{width:38px}
+  .chat-card{margin:8px;border-radius:12px}
+  .chat-wrap{padding:12px 14px}
+  .msg .bubble{max-width:85%;padding:10px 14px;font-size:.82em}
+  .msg .avatar{width:32px;height:32px;border-radius:10px}
+  .suggest-row{padding:0 14px 12px;gap:6px}
+  .suggest-btn{padding:6px 12px;font-size:.7em}
+  .input-bar{padding:10px 14px}
+  .input-inner textarea{font-size:.82em;padding:10px 14px}
+  .footer{padding:10px;font-size:.58em}
+}
+.home-btn{position:fixed;left:0;top:72px;z-index:90;width:44px;height:44px;background:var(--card, #fff);border:1px solid var(--border, rgba(0,0,0,.06));border-left:0;border-radius:0 14px 14px 0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s cubic-bezier(.25,.1,.25,1);box-shadow:2px 0 12px rgba(0,0,0,.06);color:var(--sub, #86868b)}.home-btn:hover{width:54px;color:var(--accent, #5865f2);box-shadow:4px 0 20px rgba(88,101,242,.15)}.home-btn svg{width:20px;height:20px;transition:transform .3s}.home-btn:hover svg{transform:scale(1.1)}</style></head><body><a href="../公考备考工具箱.html" class="home-btn" title="返回主页"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+
+<nav class="nav"><div class="nav-inner"><div style="font-size:.9em;font-weight:700;display:flex;align-items:center;gap:6px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>AI辅学 · 智能问答</div><div class="nav-badge">考公学习助手</div></div></nav>
+
+<div class="chat-card">
+  <div class="chat-wrap" id="chatWrap"></div>
+  <div class="suggest-row" id="suggestRow">
+    <button class="suggest-btn" onclick="askSuggest('行测数量关系怎么提高？')">📐 数量关系提高</button>
+    <button class="suggest-btn" onclick="askSuggest('申论大作文怎么写？')">✏️ 申论大作文</button>
+    <button class="suggest-btn" onclick="askSuggest('面试自我介绍怎么说？')">🎤 面试技巧</button>
+    <button class="suggest-btn" onclick="askSuggest('判断推理有什么解题技巧？')">🔍 判断推理技巧</button>
+    <button class="suggest-btn" onclick="askSuggest('江苏省考和国考有什么区别？')">📋 省考国考区别</button>
+    <button class="suggest-btn" onclick="askSuggest('最后两周怎么冲刺备考？')">⏰ 冲刺备考</button>
+  </div>
+  <div class="input-bar">
+    <div class="input-inner">
+      <button onclick="clearChat()" class="clear-btn" title="清空对话"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+      <textarea id="userInput" placeholder="输入你的问题..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+      <button onclick="sendMsg()" id="sendBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">AI辅学引擎驱动 · 考公学习助手 · 仅供练习参考</footer>
+
+<script>
+var STORAGE_KEY='ai_tutor_msgs';
+var messages=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+var SYSTEM_PROMPT='你是公考AI辅导老师，名叫"辅学助手"。你擅长回答关于公务员考试、事业单位考试的任何问题，包括行测各模块（言语理解、数量关系、判断推理、资料分析、常识判断、政治理论）、申论写作、面试技巧、职位选择、备考规划等。回答要专业、简洁、有针对性。用户是正在备考江苏公务员的考生。请用亲切、鼓励的语气。每次回答控制在300字以内。';
+
+function saveMsgs(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(messages.slice(-40)))}catch(e){}}
+
+var aiAvatar='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
+var userAvatar='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+function addMsg(role,text){
+  messages.push({role:role,text:text});
+  var w=document.getElementById('chatWrap'),html='';
+  messages.forEach(function(m){
+    if(m.role==='ai')html+='<div class="msg ai"><div class=avatar>'+aiAvatar+'</div><div class=bubble>'+m.text.replace(/\n/g,'<br>')+'</div></div>';
+    else html+='<div class="msg user"><div class=avatar>'+userAvatar+'</div><div class=bubble>'+m.text.replace(/\n/g,'<br>')+'</div></div>';
+  });
+  w.innerHTML=html;w.scrollTop=w.scrollHeight;saveMsgs();
+}
+function showTyping(){
+  var w=document.getElementById('chatWrap'),t='<div class="msg ai"><div class=avatar>'+aiAvatar+'</div><div class=bubble><div class=typing><span></span><span></span><span></span></div></div></div>';
+  w.innerHTML+=t;w.scrollTop=w.scrollHeight;
+}
+function askSuggest(q){
+  document.getElementById('userInput').value=q;sendMsg();
+}
+
+async function sendMsg(){
+  var inp=document.getElementById('userInput'),text=inp.value.trim();
+  if(!text)return;
+  var btn=document.getElementById('sendBtn');btn.disabled=true;inp.value='';inp.style.height='auto';
+  addMsg('user',text);showTyping();
+  try{
+    var res=await fetch('https://api.deepseek.com/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer sk-0541b3112cd44ec18041c235d380affc'},body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:text}],max_tokens:600,temperature:.7})});
+    var d=await res.json(),reply=d.choices[0].message.content;
+    addMsg('ai',reply);
+  }catch(e){addMsg('ai','抱歉，网络出现问题，请稍后重试。')}
+  btn.disabled=false;inp.focus();
+}
+
+document.getElementById('userInput').addEventListener('input',function(){
+  this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';
+});
+
+function clearChat(){messages=[];saveMsgs();addMsg('ai','对话已清空。有什么新问题想问我吗？')}
+if(messages.length>0){var w=document.getElementById('chatWrap'),html='';messages.forEach(function(m){if(m.role==='ai')html+='<div class="msg ai"><div class=avatar>'+aiAvatar+'</div><div class=bubble>'+m.text.replace(/\n/g,'<br>')+'</div></div>';else html+='<div class="msg user"><div class=avatar>'+userAvatar+'</div><div class=bubble>'+m.text.replace(/\n/g,'<br>')+'</div></div>';});w.innerHTML=html;w.scrollTop=w.scrollHeight}else{addMsg('ai','你好！我是你的AI辅学助手\n\n今天想学什么呢？无论是行测解题技巧、申论写作方法、面试答题思路，还是职位选择建议，任何关于公考的问题都可以问我哦！')}
+</script>
+</body></html>
